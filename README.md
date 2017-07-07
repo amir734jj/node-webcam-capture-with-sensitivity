@@ -1,5 +1,5 @@
 # nodejs-webcam-capture-with-sensitivity
-Capture webcam feed into SQLite as base64 if 0.5% change occurred since last frame
+Capture webcam feed into SQLite as base64 if 0.5% change occurred since last frame plus simple angular/express UI
 
 ```sh
 sudo apt-get install libcairo2-dev libjpeg-dev libpango1.0-dev libgif-dev build-essential g++
