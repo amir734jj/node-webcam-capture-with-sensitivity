@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Webcam preview</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <script src="socket.io/socket.io.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.6.5/angular.min.js"></script>
+
+    <style>
+        .table td, th {
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body ng-app="webcam" ng-controller="webcamCtrl" ng-keydown="key($event)">
+    <div class="container">
+
+        <div class="jumbotron">
+
+            <form class="form-horizontal">
+                <div class="form-group">
+                    <button class="btn btn-danger" ng-click="deleteAll()">delete all images</button>
+                </div>
+
+                <div class="form-group">
+                    <button class="btn btn-success" data-toggle="modal" data-target="#photo-gallery">Launch Photo Gallery</button>
+                </div>
+
+                <div class="form-group">
+                    <label>interval miliseconds</label>
+                    <input type="number" ng-model="miliseconds" ng-init="miliseconds = 2000" ng-change="changeInterval()" min="1000" />
+                </div>
+            </form>
+
+
+            <div class="text-center">
+                <img class="center-block img-responsive" ng-src="{{image_base64data}}" alt="Image is here!">
+                <div class="clearfix">
+                    <hr>
+                </div>
+
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Date</th>
+                            <th>Mimetype</th>
+                            <th>Mismatch</th>
+                            <th>Link</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr ng-repeat="image in images">
+                            <td>{{image.id}}</td>
+                            <td>{{formatDate(image.date)}}</td>
+                            <td>{{image.mimetype}}</td>
+                            <td>{{image.mismatch}}</td>
+                            <td><a class="btn btn-primary" download="{{image.date}}.{{image.mimetype.split('/')[1]}}" href="image/{{image.id}}" target="_blank">url</a></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+
+
+
+        <div class="modal fade" id="photo-gallery" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header close-in-full-screen">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">X</button>
+                        <h4 class="modal-title" id="myModalLabel">Photo Gallery</h4>
+                    </div>
+                    <div class="modal-body" id="gallery-swipe">
+                        <div class="text-center">
+                            <img class="center-block img-responsive" ng-src="image/{{images[currentImageIndex].id}}" />
+                            <hr />
+                            <p>{{formatDate(images[currentImageIndex].date)}}</p>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" ng-click="changeImage('previous')"><i class="icon-long-arrow-right"></i> Left</button>
+                        <button type="button" class="btn btn-primary" ng-click="changeImage('next')"><i class="icon-long-arrow-left"></i> Right</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        angular.module("webcam", []).controller("webcamCtrl", ["$scope", "$http", function($scope, $http) {
+            socket = io(); // socket IO port
+
+            socket.on("new-image", function(message, peer, data) {
+                $scope.$apply(function() {
+                    $scope.image_base64data = message;
+                });
+
+                $scope.getAll();
+            });
+
+            $scope.deleteAll = function() {
+                $http.post("/deleteAll").then(function() {
+                    $scope.getAll();
+                });
+            };
+
+            $scope.getAll = function() {
+                $http.get("/all").then(function(response) {
+                    $scope.images = response.data;
+                });
+            };
+
+            $scope.formatDate = function(date) {
+                return new Date(date).toLocaleDateString("en-US", {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: "numeric",
+                    minute: "numeric",
+                    second: "numeric"
+                }).toString();
+            };
+
+
+            $scope.currentImageIndex = 0;
+            $scope.changeImage = function(event) {
+                if (event === "next") {
+                    $scope.currentImageIndex = ($scope.currentImageIndex + 1) % $scope.images.length;
+                } else if (event === "previous") {
+                    $scope.currentImageIndex = ($scope.currentImageIndex + 1) % $scope.images.length;
+                }
+            };
+
+            $scope.key = function($event) {
+                if ($event.keyCode == 39) {
+                    $scope.changeImage("next");
+                } else if ($event.keyCode == 37) {
+                    $scope.changeImage("previous");
+                }
+            }
+
+            $scope.changeInterval = function() {
+                if ($scope.miliseconds >= 1000) {
+                    $http.post("/captureInterval", {
+                        miliseconds: $scope.miliseconds
+                    }).then(function(response) {
+                        $scope.miliseconds = data.response;
+                    });
+                } else {
+                    $scope.miliseconds = 1000;
+                }
+            };
+        }]);
+    </script>
+
+</body>
+
+</html>
