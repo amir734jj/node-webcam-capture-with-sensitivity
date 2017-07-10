@@ -6,6 +6,7 @@ In Ubuntu:
 ```sh
 sudo apt-get install libcairo2-dev libjpeg-dev libpango1.0-dev libgif-dev build-essential g++
 sudo npm install -g node-gyp
+sudo apt-get install fswebcam
 npm install
 node capture.js
 http://localhost
